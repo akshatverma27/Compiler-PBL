@@ -466,7 +466,7 @@ char *yytext;
 #include "parser.tab.h"
 
 int line = 1;
-int PRINT_MODE = 1;
+int PRINT_MODE = 0;
 
 char *keywords[] = {"int","float","if","while","return"};
 
@@ -780,7 +780,7 @@ case 5:
 YY_RULE_SETUP
 #line 31 "lexer.l"
 {
-                        char c;
+                        int c;
                         while((c = input()) != EOF) {
                             if(c == '*') {
                                 if((c = input()) == '/') break;
@@ -794,147 +794,96 @@ YY_RULE_SETUP
 #line 41 "lexer.l"
 {
     if(isKeyword(yytext)) {
-
-        if(PRINT_MODE) {
-            printf("KEYWORD: %s (line %d)\n", yytext, line);
-        } else {
-            if(strcmp(yytext,"int")==0) return INT;
-            if(strcmp(yytext,"float")==0) return FLOAT;
-            if(strcmp(yytext,"if")==0) return IF;
-            if(strcmp(yytext,"while")==0) return WHILE;
-            if(strcmp(yytext,"return")==0) return RETURN;
-        }
+        if(strcmp(yytext,"int")==0) return INT;
+        if(strcmp(yytext,"float")==0) return FLOAT;
+        if(strcmp(yytext,"if")==0) return IF;
+        if(strcmp(yytext,"while")==0) return WHILE;
+        if(strcmp(yytext,"return")==0) return RETURN;
     }
     else {
-        if(PRINT_MODE) {
-            printf("IDENTIFIER: %s (line %d)\n", yytext, line);
-        } else {
-            yylval.str = strdup(yytext);
-            return ID;
-        }
+        yylval.str = strdup(yytext);
+        return ID;
     }
 }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 64 "lexer.l"
+#line 55 "lexer.l"
 {
-    if(PRINT_MODE) {
-        printf("FLOAT: %s (line %d)\n", yytext, line);
-    } else {
-        yylval.num = atof(yytext);
-        return NUMBER;
-    }
+    yylval.num = atof(yytext);
+    return NUMBER;
 }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 73 "lexer.l"
+#line 60 "lexer.l"
 {
-    if(PRINT_MODE) {
-        printf("INTEGER: %s (line %d)\n", yytext, line);
-    } else {
-        yylval.num = atoi(yytext);
-        return NUMBER;
-    }
+    yylval.num = atoi(yytext);
+    return NUMBER;
 }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 82 "lexer.l"
+#line 65 "lexer.l"
 {
-    if(PRINT_MODE) {
-        printf("REL_OP: %s (line %d)\n", yytext, line);
-    } else {
-        if(strcmp(yytext,"<")==0) return LT;
-        if(strcmp(yytext,">")==0) return GT;
-        return RELOP;
-    }
+    if(strcmp(yytext,"<")==0) return LT;
+    if(strcmp(yytext,">")==0) return GT;
+    return RELOP;
 }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 92 "lexer.l"
-{
-    if(PRINT_MODE) printf("ASSIGN: = (line %d)\n", line);
-    else return ASSIGN;
-}
+#line 71 "lexer.l"
+{ return ASSIGN; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 97 "lexer.l"
-{
-    if(PRINT_MODE) printf("OPERATOR: + (line %d)\n", line);
-    else return PLUS;
-}
+#line 72 "lexer.l"
+{ return PLUS; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 102 "lexer.l"
-{
-    if(PRINT_MODE) printf("OPERATOR: - (line %d)\n", line);
-    else return MINUS;
-}
+#line 73 "lexer.l"
+{ return MINUS; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 107 "lexer.l"
-{
-    if(PRINT_MODE) printf("OPERATOR: * (line %d)\n", line);
-    else return MUL;
-}
+#line 74 "lexer.l"
+{ return MUL; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 112 "lexer.l"
-{
-    if(PRINT_MODE) printf("OPERATOR: / (line %d)\n", line);
-    else return DIV;
-}
+#line 75 "lexer.l"
+{ return DIV; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 117 "lexer.l"
-{
-    if(PRINT_MODE) printf("DELIMITER: ; (line %d)\n", line);
-    else return SEMI;
-}
+#line 76 "lexer.l"
+{ return SEMI; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 122 "lexer.l"
-{
-    if(PRINT_MODE) printf("DELIMITER: ( (line %d)\n", line);
-    else return LPAREN;
-}
+#line 77 "lexer.l"
+{ return LPAREN; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 127 "lexer.l"
-{
-    if(PRINT_MODE) printf("DELIMITER: ) (line %d)\n", line);
-    else return RPAREN;
-}
+#line 78 "lexer.l"
+{ return RPAREN; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 132 "lexer.l"
-{
-    if(PRINT_MODE) printf("DELIMITER: { (line %d)\n", line);
-    else return LBRACE;
-}
+#line 79 "lexer.l"
+{ return LBRACE; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 137 "lexer.l"
-{
-    if(PRINT_MODE) printf("DELIMITER: } (line %d)\n", line);
-    else return RBRACE;
-}
+#line 80 "lexer.l"
+{ return RBRACE; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 142 "lexer.l"
+#line 82 "lexer.l"
 {
     if(yytext[0] != '\n' && yytext[0] != '\t' && yytext[0] != ' ' && yytext[0] != '\r') {
         printf("LEXICAL ERROR: %s at line %d\n", yytext, line);
@@ -943,10 +892,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 148 "lexer.l"
+#line 88 "lexer.l"
 ECHO;
 	YY_BREAK
-#line 950 "lex.yy.c"
+#line 899 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1951,7 +1900,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 148 "lexer.l"
+#line 88 "lexer.l"
 
 
 int yywrap() {

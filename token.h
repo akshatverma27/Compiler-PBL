@@ -4,19 +4,25 @@
 typedef enum {
     KEYWORD,
     IDENTIFIER,
-    INTEGER,
-    FLOAT,
+    INTEGER_LITERAL,
+    FLOAT_LITERAL,
     OPERATOR,
     DELIMITER,
-    RELATIONAL,
-    ASSIGN,
-    UNKNOWN
+    RELATIONAL_OPERATOR,
+    ASSIGNMENT_OPERATOR,
+    LOGICAL_OPERATOR,
+    UNKNOWN_ERROR,
+    END_OF_FILE
 } TokenType;
 
 typedef struct {
     char lexeme[100];
-    TokenType type;
-    int line;
+    TokenType tokenType;
+    int lineNumber;
+    int columnNumber;
 } Token;
+
+// Integration Interface with Parser
+Token getNextToken();
 
 #endif

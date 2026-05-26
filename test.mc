@@ -1,11 +1,10 @@
-int a = 5;
-float b = 3.14;
+int max = 10 * 5;
+int i = 0;
+float result = 0.0;
 
-if(a < 10) {
-    b = b + a;
+while (i < max) {
+    if (i > 25) {
+        result = result + 1.5;
+    }
+    i = i + 1;
 }
-
-// This is a comment
-
-/* multi
-line comment */
