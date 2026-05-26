@@ -12,15 +12,23 @@ export async function POST(req) {
             return Response.json({ error: 'No code provided.' }, { status: 400 });
         }
 
-        const projectPath = 'd:\\mini-compiler';
+        let projectPath = process.cwd();
+        if (!fs.existsSync(path.join(projectPath, 'compiler')) && !fs.existsSync(path.join(projectPath, 'compiler.exe'))) {
+            const parentPath = path.resolve(projectPath, '..');
+            if (fs.existsSync(path.join(parentPath, 'compiler')) || fs.existsSync(path.join(parentPath, 'compiler.exe'))) {
+                projectPath = parentPath;
+            }
+        }
         const filePath = path.join(projectPath, 'test.mc');
 
         // 1. Write the code to test.mc
         fs.writeFileSync(filePath, code);
 
-        // 2. Execute the compiler via WSL
-        // Using wsl because the compiler is built in a Linux environment (as per previous logs)
-        const { stdout, stderr } = await execPromise(`wsl ./compiler test.mc`, { cwd: projectPath });
+        // 2. Execute the compiler
+        const isWindows = process.platform === 'win32';
+        const executable = fs.existsSync(path.join(projectPath, 'compiler.exe')) ? './compiler.exe' : './compiler';
+        const runCmd = isWindows ? `wsl ${executable} test.mc` : `${executable} test.mc`;
+        const { stdout, stderr } = await execPromise(runCmd, { cwd: projectPath });
 
         // 3. Parse the compiler output
         const parsedData = parseCompilerOutput(stdout);
@@ -29,15 +37,15 @@ export async function POST(req) {
         const tokens = tokenizeSource(code);
         parsedData.tokens = tokens;
 
-        return Response.json({ 
-            success: true, 
-            output: stdout, 
-            parsed: parsedData 
+        return Response.json({
+            success: true,
+            output: stdout,
+            parsed: parsedData
         });
 
     } catch (error) {
-        return Response.json({ 
-            success: false, 
+        return Response.json({
+            success: false,
             error: error.message,
             output: error.stdout || ''
         }, { status: 500 });
@@ -47,7 +55,7 @@ export async function POST(req) {
 function parseCompilerOutput(output) {
     const lines = output.split('\n');
     let phase = '';
-    
+
     const astLines = [];
     const symbolTable = [];
     const tac = [];
@@ -55,7 +63,7 @@ function parseCompilerOutput(output) {
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trimEnd();
-        
+
         if (line.includes('--- Abstract Syntax Tree')) { phase = 'AST'; continue; }
         if (line.includes('--- Phase 3')) { phase = 'SEMANTIC'; continue; }
         if (line.includes('--- Symbol Table')) { phase = 'SYMBOL'; continue; }
@@ -111,26 +119,38 @@ function parseAstToReactFlow(astLines) {
 
     astLines.forEach((line) => {
         if (!line.trim()) return;
-        
+
         const indent = line.search(/\S/); // find index of first non-whitespace character
         const label = line.trim();
         const nodeId = `node_${idCounter++}`;
+
+        // Determine Neo-Brutalist color based on node type
+        let bgColor = '#facc15'; // Default yellow
+        if (label.startsWith('ID:') || label.includes('Var:') || label.includes('ID')) {
+            bgColor = '#8be9fd'; // Cyan for IDs
+        } else if (label.startsWith('NUMBER:') || label.includes('Literal') || label.includes('NUMBER')) {
+            bgColor = '#50fa7b'; // Green for literals/numbers
+        } else if (label.includes('Assign') || label.includes('=') || label.includes('+') || label.includes('-') || label.includes('*') || label.includes('/') || label.includes('<') || label.includes('>') || label.includes('==') || label.includes('!=')) {
+            bgColor = '#ff79c6'; // Pink for operations
+        } else if (label.includes('WHILE') || label.includes('IF') || label.includes('else') || label.includes('return')) {
+            bgColor = '#ffb86c'; // Orange for control flow
+        }
 
         // React Flow node structure
         const newNode = {
             id: nodeId,
             data: { label },
-            position: { x: 0, y: 0 }, 
+            position: { x: 0, y: 0 },
             indent,
-            style: { 
-                background: '#161b22', 
-                color: '#a78bfa', // text-violet-400
-                border: '1px solid #8b5cf6', // border-violet-500
-                borderRadius: '8px',
+            style: {
+                background: bgColor,
+                color: '#000000',
+                border: '3px solid #000000',
+                borderRadius: '0px',
                 padding: '10px 15px',
                 fontWeight: 'bold',
                 fontFamily: 'monospace',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)'
+                boxShadow: '4px 4px 0px #000000'
             }
         };
 
@@ -146,8 +166,8 @@ function parseAstToReactFlow(astLines) {
                 id: `e_${parent.id}-${nodeId}`,
                 source: parent.id,
                 target: nodeId,
-                animated: true,
-                style: { stroke: '#8b5cf6', strokeWidth: 2 } // sleek purple edge
+                animated: false,
+                style: { stroke: '#000000', strokeWidth: 3 } // thick black edge
             });
         }
 
@@ -161,15 +181,15 @@ function parseAstToReactFlow(astLines) {
     nodes.forEach(node => {
         const level = node.indent / 2; // Assuming 2 spaces per indent
         if (!levelCounts[level]) levelCounts[level] = 0;
-        
+
         // Spread nodes horizontally based on how many are in this level
         node.position = {
-            x: (levelCounts[level] * 200) + (level * 50), 
+            x: (levelCounts[level] * 200) + (level * 50),
             y: level * 100
         };
-        
+
         levelCounts[level]++;
-        
+
         // Cleanup extra internal prop
         delete node.indent;
     });
@@ -181,7 +201,7 @@ function tokenizeSource(code) {
     const tokens = [];
     const lines = code.split('\n');
     const tokenRegex = /\b(int|float|if|else|while|return)\b|\b([a-zA-Z_][a-zA-Z0-9_]*)\b|\b(\d+(?:\.\d+)?)\b|(==|!=|<=|>=|<|>|\+|-|\*|\/|=|;|,|\(|\)|\{|\})/g;
-    
+
     for (let i = 0; i < lines.length; i++) {
         let match;
         // Reset regex state
@@ -193,10 +213,10 @@ function tokenizeSource(code) {
             else if (match[3]) type = 'NUMBER';
             else if (match[4]) {
                 const op = match[4];
-                if ([';','{','}','(',')',','].includes(op)) type = 'PUNCTUATION';
+                if ([';', '{', '}', '(', ')', ','].includes(op)) type = 'PUNCTUATION';
                 else type = 'OPERATOR';
             }
-            
+
             tokens.push({
                 id: tokens.length + 1,
                 lexeme: match[0],
